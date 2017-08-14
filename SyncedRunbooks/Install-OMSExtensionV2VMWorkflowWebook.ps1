@@ -18,7 +18,7 @@ workflow Install-OMSExtensionV2VMWorkflowWebhook
         $WebhookData         
     ) 
   
-    # Set Error Preference and check 
+    # Set Error Preference and check this file
  $ErrorActionPreference = "Stop" 
  
  # Get Variables and Credentials 
