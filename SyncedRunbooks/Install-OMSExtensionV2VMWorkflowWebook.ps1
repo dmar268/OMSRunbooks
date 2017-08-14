@@ -1,138 +1,138 @@
 workflow Install-OMSExtensionV2VMWorkflowWebhook 
 { 
- param ( 
-        [Parameter(Mandatory=$false)] 
-        [String]  
-        $VMName, 
- 
-        [Parameter(Mandatory=$false)] 
-        [String]  
-        $VMResourceGroup, 
- 
-        [Parameter(Mandatory=$false)] 
-        [String]  
-        $VMLocation, 
-         
-        [Parameter(Mandatory=$false)] 
-        [object]  
-        $WebhookData         
-    ) 
-  
-    # Set Error Preference  
- $ErrorActionPreference = "Stop" 
- 
- # Get Variables and Credentials 
- $AzureSubscriptionID    = Get-AutomationVariable ` 
-                              -Name 'AzureSubscriptionID' 
- $OMSWorkspaceID         = Get-AutomationVariable ` 
-                              -Name 'OMSWorkspaceID' 
-    $OMSWorkspacePrimaryKey = Get-AutomationVariable ` 
-                              -Name 'OMSWorkspacePrimaryKey' 
- $AzureCred              = Get-AutomationPSCredential ` 
-                              -Name 'AzureCredentials' 
- 
-    # When webhook is used 
-    if ($WebhookData -ne $null)  
-    { 
-        # Collect properties of WebhookData 
-        $WebhookName    =   $WebhookData.WebhookName 
-        $WebhookHeaders =   $WebhookData.RequestHeader 
-        $WebhookBody    =   $WebhookData.RequestBody 
- 
-        $AuthorizationValue = $WebhookHeaders.AuthorizationValue 
-        If ($AuthorizationValue -eq "OMSBook") 
-        { 
-            # Convert webhook body 
-            $WebhookBodyObj = ConvertFrom-Json ` 
-                                -InputObject $WebhookBody 
-         
-            # Get webhook input data 
-            $VMName          = $WebhookBodyObj.VMName  
-            $VMResourceGroup = $WebhookBodyObj.VMResourceGroup 
-            $VMLocation      = $WebhookBodyObj.VMLocation 
-        } 
-        Else 
-        { 
-            $ErrorMessage = "Webhook was executed without authorization." 
-            Write-Error ` 
-            -Message $ErrorMessage ` 
-            -ErrorAction Stop 
-        } 
-         
-    } 
-  
-    # Create Checkpoint  
-    Checkpoint-Workflow 
-    inlinescript 
-    { 
-        Try 
-        { 
-            # Authenticate 
-         $AzureAccount = Add-AzureRmAccount ` 
-                            -Credential $Using:AzureCred ` 
-                            -SubscriptionId $Using:AzureSubscriptionID  
-        } 
-        Catch 
-        { 
-            $ErrorMessage = 'Login to Azure failed.' 
-            $ErrorMessage += " `n" 
-            $ErrorMessage += 'Error: ' 
-            $ErrorMessage += $_ 
-            Write-Error ` 
-            -Message $ErrorMessage ` 
-            -ErrorAction Stop 
-        } 
-         
-     
-        # Set Variables 
-     [string]$Settings          ='{"workspaceId":"' + $Using:OMSWorkspaceID + '"}'; 
-     [string]$ProtectedSettings ='{"workspaceKey":"' + $Using:OMSWorkspacePrimaryKey + '"}'; 
- 
-     # Start extension installation 
-     Write-Output ` 
-        -InputObject 'OMS Extension Installation Started.' 
- 
-        Try 
-        { 
-            $ExtenstionStatus = Set-AzureRmVMExtension ` 
-                                -ResourceGroupName $Using:VMResourceGroup ` 
-                             -VMName $Using:VMName ` 
-           -Name 'OMSExtension' ` 
-           -Publisher 'Microsoft.EnterpriseCloud.Monitoring' ` 
-           -TypeHandlerVersion '1.0' ` 
-           -ExtensionType 'MicrosoftMonitoringAgent' ` 
-           -Location $Using:VMLocation ` 
-           -SettingString $Settings ` 
-           -ProtectedSettingString $ProtectedSettings ` 
-                                -ErrorAction Stop 
-        } 
-        Catch 
-        { 
-            $ErrorMessage = 'Failed to install OMS extension on Azure V2 VM.' 
-            $ErrorMessage += " `n" 
-            $ErrorMessage += 'Error: ' 
-            $ErrorMessage += $_ 
-            Write-Error ` 
-            -Message $ErrorMessage ` 
-            -ErrorAction Stop 
-        } 
-      
-     # Output results 
-     If ($ExtenstionStatus.IsSuccessStatusCode  -eq 'True') 
-     { 
-         Write-Output ` 
-            -InputObject 'OMS Extension was installed successfully.' 
-     } 
-     Else 
-     { 
-         Write-Output ` 
-            -InputObject 'OMS Extension was not installed.' 
- 
-            Write-Error ` 
-            -Message $ExtenstionStatus.StatusCode ` 
-            -ErrorAction Stop 
-     } 
-     
-    }  
-  
-}  
+Â param ( 
+Â Â Â Â Â Â Â  [Parameter(Mandatory=$false)] 
+Â Â Â Â Â Â Â  [String]Â  
+Â Â Â Â Â Â Â  $VMName, 
+Â 
+Â Â Â Â Â Â Â  [Parameter(Mandatory=$false)] 
+Â Â Â Â Â Â Â  [String]Â  
+Â Â Â Â Â Â Â  $VMResourceGroup, 
+Â 
+Â Â Â Â Â Â Â  [Parameter(Mandatory=$false)] 
+Â Â Â Â Â Â Â  [String]Â  
+Â Â Â Â Â Â Â  $VMLocation, 
+Â Â Â Â Â Â Â Â  
+Â Â Â Â Â Â Â  [Parameter(Mandatory=$false)] 
+Â Â Â Â Â Â Â  [object]Â  
+Â Â Â Â Â Â Â  $WebhookDataÂ Â Â Â Â Â Â Â  
+Â Â Â  ) 
+Â  
+Â Â Â  # Set Error PreferenceÂ and check 
+Â $ErrorActionPreference = "Stop" 
+Â 
+Â # Get Variables and Credentials 
+Â $AzureSubscriptionIDÂ Â Â  = Get-AutomationVariable ` 
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  -Name 'AzureSubscriptionID' 
+Â $OMSWorkspaceIDÂ Â Â Â Â Â Â Â  = Get-AutomationVariable ` 
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  -Name 'OMSWorkspaceID' 
+Â Â Â  $OMSWorkspacePrimaryKey = Get-AutomationVariable ` 
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  -Name 'OMSWorkspacePrimaryKey' 
+Â $AzureCredÂ Â Â Â Â Â Â Â Â Â Â Â Â  = Get-AutomationPSCredential ` 
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  -Name 'AzureCredentials' 
+Â 
+Â Â Â  # When webhook is used 
+Â Â Â  if ($WebhookData -ne $null)Â  
+Â Â Â  { 
+Â Â Â Â Â Â Â  # Collect properties of WebhookData 
+Â Â Â Â Â Â Â  $WebhookNameÂ Â Â  =Â Â  $WebhookData.WebhookName 
+Â Â Â Â Â Â Â  $WebhookHeaders =Â Â  $WebhookData.RequestHeader 
+Â Â Â Â Â Â Â  $WebhookBodyÂ Â Â  =Â Â  $WebhookData.RequestBody 
+Â 
+Â Â Â Â Â Â Â  $AuthorizationValue = $WebhookHeaders.AuthorizationValue 
+Â Â Â Â Â Â Â  If ($AuthorizationValue -eq "OMSBook") 
+Â Â Â Â Â Â Â  { 
+Â Â Â Â Â Â Â Â Â Â Â  # Convert webhook body 
+Â Â Â Â Â Â Â Â Â Â Â  $WebhookBodyObj = ConvertFrom-Json ` 
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  -InputObject $WebhookBody 
+Â Â Â Â Â Â Â Â  
+Â Â Â Â Â Â Â Â Â Â Â  # Get webhook input data 
+Â Â Â Â Â Â Â Â Â Â Â  $VMNameÂ Â Â Â Â Â Â Â Â  = $WebhookBodyObj.VMNameÂ  
+Â Â Â Â Â Â Â Â Â Â Â  $VMResourceGroup = $WebhookBodyObj.VMResourceGroup 
+Â Â Â Â Â Â Â Â Â Â Â  $VMLocationÂ Â Â Â Â  = $WebhookBodyObj.VMLocation 
+Â Â Â Â Â Â Â  } 
+Â Â Â Â Â Â Â  Else 
+Â Â Â Â Â Â Â  { 
+Â Â Â Â Â Â Â Â Â Â Â  $ErrorMessage = "Webhook was executed without authorization." 
+Â Â Â Â Â Â Â Â Â Â Â  Write-Error ` 
+Â Â Â Â Â Â Â Â Â Â Â  -Message $ErrorMessage ` 
+Â Â Â Â Â Â Â Â Â Â Â  -ErrorAction Stop 
+Â Â Â Â Â Â Â  } 
+Â Â Â Â Â Â Â Â  
+Â Â Â  } 
+Â  
+Â Â Â  # Create CheckpointÂ  
+Â Â Â  Checkpoint-Workflow 
+Â Â Â  inlinescript 
+Â Â Â  { 
+Â Â Â Â Â Â Â  Try 
+Â Â Â Â Â Â Â  { 
+Â Â Â Â Â Â Â Â Â Â Â  # Authenticate 
+Â Â Â Â Â Â Â Â  $AzureAccount = Add-AzureRmAccount ` 
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  -Credential $Using:AzureCred ` 
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  -SubscriptionId $Using:AzureSubscriptionIDÂ  
+Â Â Â Â Â Â Â  } 
+Â Â Â Â Â Â Â  Catch 
+Â Â Â Â Â Â Â  { 
+Â Â Â Â Â Â Â Â Â Â Â  $ErrorMessage = 'Login to Azure failed.' 
+Â Â Â Â Â Â Â Â Â Â Â  $ErrorMessage += " `n" 
+Â Â Â Â Â Â Â Â Â Â Â  $ErrorMessage += 'Error: ' 
+Â Â Â Â Â Â Â Â Â Â Â  $ErrorMessage += $_ 
+Â Â Â Â Â Â Â Â Â Â Â  Write-Error ` 
+Â Â Â Â Â Â Â Â Â Â Â  -Message $ErrorMessage ` 
+Â Â Â Â Â Â Â Â Â Â Â  -ErrorAction Stop 
+Â Â Â Â Â Â Â  } 
+Â Â Â Â Â Â Â Â  
+Â Â Â Â  
+Â Â Â Â Â Â Â  # Set Variables 
+Â Â Â Â  [string]$SettingsÂ Â Â Â Â Â Â Â Â  ='{"workspaceId":"' + $Using:OMSWorkspaceID + '"}'; 
+Â Â Â Â  [string]$ProtectedSettings ='{"workspaceKey":"' + $Using:OMSWorkspacePrimaryKey + '"}'; 
+Â 
+Â Â Â Â  # Start extension installation 
+Â Â Â Â  Write-Output ` 
+Â Â Â Â Â Â Â  -InputObject 'OMS Extension Installation Started.' 
+Â 
+Â Â Â Â Â Â Â  Try 
+Â Â Â Â Â Â Â  { 
+Â Â Â Â Â Â Â Â Â Â Â  $ExtenstionStatus = Set-AzureRmVMExtension ` 
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  -ResourceGroupName $Using:VMResourceGroup ` 
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  -VMName $Using:VMName ` 
+Â Â Â Â Â Â Â Â Â Â  -Name 'OMSExtension' ` 
+Â Â Â Â Â Â Â Â Â Â  -Publisher 'Microsoft.EnterpriseCloud.Monitoring' ` 
+Â Â Â Â Â Â Â Â Â Â  -TypeHandlerVersion '1.0' ` 
+Â Â Â Â Â Â Â Â Â Â  -ExtensionType 'MicrosoftMonitoringAgent' ` 
+Â Â Â Â Â Â Â Â Â Â  -Location $Using:VMLocation ` 
+Â Â Â Â Â Â Â Â Â Â  -SettingString $Settings ` 
+Â Â Â Â Â Â Â Â Â Â  -ProtectedSettingString $ProtectedSettings ` 
+Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â Â  -ErrorAction Stop 
+Â Â Â Â Â Â Â  } 
+Â Â Â Â Â Â Â  Catch 
+Â Â Â Â Â Â Â  { 
+Â Â Â Â Â Â Â Â Â Â Â  $ErrorMessage = 'Failed to install OMS extension on Azure V2 VM.' 
+Â Â Â Â Â Â Â Â Â Â Â  $ErrorMessage += " `n" 
+Â Â Â Â Â Â Â Â Â Â Â  $ErrorMessage += 'Error: ' 
+Â Â Â Â Â Â Â Â Â Â Â  $ErrorMessage += $_ 
+Â Â Â Â Â Â Â Â Â Â Â  Write-Error ` 
+Â Â Â Â Â Â Â Â Â Â Â  -Message $ErrorMessage ` 
+Â Â Â Â Â Â Â Â Â Â Â  -ErrorAction Stop 
+Â Â Â Â Â Â Â  } 
+Â Â Â Â Â  
+Â Â Â Â  # Output results 
+Â Â Â Â  If ($ExtenstionStatus.IsSuccessStatusCodeÂ  -eq 'True') 
+Â Â Â Â  { 
+Â Â Â Â Â Â Â Â  Write-Output ` 
+Â Â Â Â Â Â Â Â Â Â Â  -InputObject 'OMS Extension was installed successfully.' 
+Â Â Â Â  } 
+Â Â Â Â  Else 
+Â Â Â Â  { 
+Â Â Â Â Â Â Â Â  Write-Output ` 
+Â Â Â Â Â Â Â Â Â Â Â  -InputObject 'OMS Extension was not installed.' 
+Â 
+Â Â Â Â Â Â Â Â Â Â Â  Write-Error ` 
+Â Â Â Â Â Â Â Â Â Â Â  -Message $ExtenstionStatus.StatusCode ` 
+Â Â Â Â Â Â Â Â Â Â Â  -ErrorAction Stop 
+Â Â Â Â  } 
+Â Â Â Â  
+Â Â Â  }Â  
+Â  
+}Â  
